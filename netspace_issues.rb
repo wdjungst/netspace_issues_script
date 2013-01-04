@@ -2,6 +2,7 @@
 require 'rubygems'
 require 'yaml'
 require 'google_drive'
+require 'pry'
 
 CONFIG = YAML::load_file(File.expand_path(File.dirname(__FILE__) + '/config/config.yml'))
 NETSPACE_ISSUES = "0ArzbL6-jJsFbdDVhU1JWRVlYaXZPX1U4Wmg1RF9vUEE"
@@ -264,18 +265,24 @@ def update_all
   resolved_count = 0
 
   for row in 2..@i_ws.num_rows
-    if @i_ws[row, 5] != '' && @i_ws[row, 3].to_s.downcase.include?('feedback')
-      new_feedback = true
-      feedback_items << IssueItem.new(@i_ws[row, 1], @i_ws[row, 2], @i_ws[row, 3], @i_ws[row, 4], 'X', 0)
-    elsif @i_ws[row, 5].upcase == 'NI'
+    if @i_ws[row, 5].upcase == 'NI'
+      reload = true
       not_an_issue << IssueItem.new(@i_ws[row, 1], @i_ws[row, 2], @i_ws[row, 3], @i_ws[row, 4], 'X', 0)
     elsif @i_ws[row, 5].upcase == 'R'
+      reload = true
       resolved_list << IssueItem.new(@i_ws[row, 1], @i_ws[row, 2], @i_ws[row, 3], @i_ws[row, 4], 'X', 0)
+    elsif @i_ws[row, 3].to_s.downcase.include?('feedback')
+      if @i_ws[row, 5].strip != '' && @i_ws[row, 5].to_s.downcase != 'r' && @i_ws[row, 5].to_s.downcase != 'ni' && @i_ws[row, 5].to_s.downcase != 'a'
+        reload = true
+        feedback_items << IssueItem.new(@i_ws[row, 1], @i_ws[row, 2], @i_ws[row, 3], @i_ws[row, 4], 'X', 0)
+      else
+        main_list << IssueItem.new(@i_ws[row, 1], @i_ws[row, 2], @i_ws[row, 3], @i_ws[row, 4], @i_ws[row, 5], 0)
+      end
     else
       main_list << IssueItem.new(@i_ws[row, 1], @i_ws[row, 2], @i_ws[row, 3], @i_ws[row, 4], @i_ws[row, 5], 0)
     end
 
-    if new_feedback
+    if reload
       @i_ws[row, 1] = ""
       @i_ws[row, 2] = ""
       @i_ws[row, 3] = ""
